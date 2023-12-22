@@ -127,6 +127,13 @@ python -m pip install /path/to/symbolizer/ --user --upgrade
 >>> sym = symbolizer.DebugEngine('c:/temp/win10x64_bmp.dmp')
 ```
 
+Optionally a symbol path can be passed to constructor:
+
+```py
+>>> sym = symbolizer.DebugEngine('c:/temp/win10x64_bmp.dmp', 'z:/symbols')
+```
+
+
 #### Symbolize an address
 
 ```py
