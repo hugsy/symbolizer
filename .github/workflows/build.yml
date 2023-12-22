@@ -78,7 +78,7 @@ jobs:
         Import-Module .\.github\Invoke-VisualStudio.ps1
         Invoke-VisualStudio2022${{ matrix.variant.arch }}
         pip install --upgrade pip
-        pip install -U --user symbolizer/python/requirements.txt
+        pip install -U --user -r symbolizer/python/requirements.txt
 
     - name: Build wheel
       run: |
