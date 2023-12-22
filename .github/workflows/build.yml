@@ -1,0 +1,92 @@
+name: Builds
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+    tags:
+      - v*
+
+jobs:
+  symbolizer:
+    strategy:
+      fail-fast: false
+      matrix:
+        variant:
+          - {os: windows-latest, generator: msvc, arch: x64, config: RelWithDebInfo}
+          - {os: windows-latest, generator: msvc, arch: win32, config: RelWithDebInfo}
+          - {os: windows-latest, generator: msvc, arch: arm64, config: RelWithDebInfo}
+          - {os: windows-latest, generator: ninja, arch: x64, config: RelWithDebInfo}
+    runs-on: ${{ matrix.variant.os }}
+    name: parser / ${{ matrix.variant.os }} / ${{ matrix.variant.generator }} / ${{ matrix.variant.arch }}
+    env:
+      CMAKE_FLAGS: "-DBUILD_TOOL:BOOL=ON -DBUILD_PYTHON_BINDINGS:BOOL=OFF -DBUILD_PYTHON_PACKAGE:BOOL=OFF"
+      CMAKE_ARCH: ""
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Environment Setup
+      run: |
+        Import-Module .\.github\Invoke-VisualStudio.ps1
+        Invoke-VisualStudio2022${{ matrix.variant.arch }}
+        echo "CMAKE_ARCH='-A ${{ matrix.variant.arch }}'" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+    - name: Build
+      run: |
+        mkdir build
+        mkdir artifact
+        cmake -S . -B ./build ${{ env.CMAKE_ARCH }} ${{ env.CMAKE_FLAGS }}
+        cmake --build ./build --verbose --config ${{ matrix.variant.config }}
+        cmake --install ./build --config ${{ matrix.variant.config }} --prefix ./artifact
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: symbolizer-${{ matrix.variant.os }}.${{ matrix.variant.generator }}-${{ matrix.variant.arch }}.${{ matrix.variant.config }}-${{ github.sha }}
+        path: artifact/
+
+  bindings:
+    strategy:
+      fail-fast: false
+      matrix:
+        # nanobind does not support Python < 3.8.
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        variant:
+          - {os: windows-latest, generator: msvc, arch: x64, config: RelWithDebInfo, py-arch: x64}
+          - {os: windows-latest, generator: msvc, arch: win32, config: RelWithDebInfo, py-arch: x86}
+          # - {os: windows-latest, generator: msvc, arch: arm64, config: RelWithDebInfo, py-arch: x64} # Unsupported (see https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json)
+
+    runs-on: ${{ matrix.variant.os }}
+    name: bindings / ${{ matrix.variant.os }} / ${{ matrix.variant.generator }} / ${{ matrix.python-version }} / ${{ matrix.variant.arch }}
+    env:
+      CMAKE_FLAGS: "-DBUILD_TOOL:BOOL=OFF -DBUILD_PYTHON_BINDINGS:BOOL=OFF -DBUILD_PYTHON_PACKAGE:BOOL=OFF"
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        architecture: ${{ matrix.variant.py-arch }}
+
+    - name: Environment Setup
+      run: |
+        Import-Module .\.github\Invoke-VisualStudio.ps1
+        Invoke-VisualStudio2022${{ matrix.variant.arch }}
+        pip install --upgrade pip
+        pip install -U --user symbolizer/python/requirements.txt
+
+    - name: Build wheel
+      run: |
+        mkdir wheel
+        pip wheel . -w ./wheel
+
+    - name: Upload wheel
+      uses: actions/upload-artifact@v4
+      with:
+        name: wheels
+        path: wheel/*.whl

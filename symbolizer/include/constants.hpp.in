@@ -1,0 +1,48 @@
+#pragma once
+
+#include <string>
+
+namespace Symbolizer
+{
+// clang-format off
+///
+///@brief
+///
+constexpr std::wstring_view LibraryName    = L"@LIBRARY_NAME@";
+
+///
+///@brief
+///
+constexpr std::wstring_view LibraryAuthor  = L"@LIBRARY_AUTHOR@";
+
+///
+///@brief
+///
+constexpr std::wstring_view LibraryLicense = L"@LIBRARY_LICENSE@";
+
+///
+///@brief
+///
+constexpr std::wstring_view LibraryBanner = L"@LIBRARY_NAME@" L" v" L"@LIBRARY_VERSION@" L" - " L"@LIBRARY_VERSION_RELEASE@";
+// clang-format on
+
+constexpr struct __Version
+{
+    // clang-format off
+    const static inline uint8_t Major{ @LIBRARY_VERSION_MAJOR@ };
+    const static inline uint8_t Minor{ @LIBRARY_VERSION_MINOR@ };
+    const static inline uint16_t Patch{ @LIBRARY_VERSION_PATCH@ };
+    const static inline std::wstring_view Release{ L"@LIBRARY_VERSION_RELEASE@" };
+    const static inline std::wstring_view VersionString{ L"@LIBRARY_VERSION@" };
+    // clang-format on
+} Version {};
+
+constexpr struct __Target
+{
+    // clang-format off
+    const static inline std::wstring_view Architecture{ L"@BUILD_ARCHITECTURE@" };
+    const static inline std::wstring_view System{ L"@BUILD_OS@" };
+    // clang-format on
+} Target {};
+
+} // namespace Symbolizer

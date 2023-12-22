@@ -89,21 +89,27 @@ As opposed to batch mode, you might be interested in just symbolizing a single t
 Clone the repository with:
 
 ```
-(base) > git clone --recurse-submodules https://github.com/0vercl0k/symbolizer.git
+git clone https://github.com/0vercl0k/symbolizer.git
 ```
 
-You can open the Visual Studio solution `symbolizer.sln` or build it via the command line with:
+You can build with `cmake` (the minimum version is 3.20):
 
 ```
-(base) symbolizer>msbuild /p:Configuration=Release src\symbolizer.sln
-Microsoft (R) Build Engine version 16.7.0+b89cb5fde for .NET Framework
-Copyright (C) Microsoft Corporation. All rights reserved.
-
-[...]
-
-Build succeeded.
-    0 Warning(s)
-    0 Error(s)
-
-Time Elapsed 00:00:00.42
+cmake -S ./symbolizer -B ./build
+cmake --build ./build --config RelWithDebInfo
 ```
+
+You can install it as such:
+
+```
+cmake --install ./build --config RelWithDebInfo --prefix /my/install/path
+```
+
+## Python Bindings
+
+The easiest way to build & install the Python bindings is with `pip`. Python bindings are supported from Python 3.8 and newer.
+
+```
+python -m pip install /path/to/symbolizer/ --user --upgrade
+```
+
