@@ -113,3 +113,34 @@ The easiest way to build & install the Python bindings is with `pip`. Python bin
 python -m pip install /path/to/symbolizer/ --user --upgrade
 ```
 
+### Usage
+
+#### Import
+
+```py
+>>> import symbolizer
+```
+
+#### Load a Dump File
+
+```py
+>>> sym = symbolizer.DebugEngine('c:/temp/win10x64_bmp.dmp')
+```
+
+#### Symbolize an address
+
+```py
+>>> addr = 0xfffff8065bc231b0
+>>> sym = sym.symbolize(dmp.context.Rip)
+>>> print(f"{addr:#x} -> {sym}")
+0xfffff8065bc231b0 -> nt!DbgBreakPointWithStatus+0x0
+```
+
+#### Resolve a symbol
+
+```py
+>>> sym = "nt!PsLoadedModuleList"
+>>> addr = sym.resolve(sym)
+>>> print(f"{sym} -> {addr:#x}")
+nt!PsLoadedModuleList -> 0xfffff8065c4482d0
+```
