@@ -23,6 +23,8 @@ namespace fs = std::filesystem;
 #define SYMBOLIZER_ARCH "x86"
 #elif defined(__amd64__) || defined(_M_X64)
 #define SYMBOLIZER_ARCH "x64"
+#elif defined(__arm64__) || defined(_M_ARM64)
+#define SYMBOLIZER_ARCH "arm64"
 #else
 #error Platform not supported.
 #endif
