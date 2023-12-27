@@ -51,23 +51,23 @@ using GenericHandle = std::unique_ptr<
             }
         })>;
 
-using UniqueHandle       = GenericHandle<void, ::CloseHandle>;
-using UniqueIDebugClient = GenericHandle<
-    IDebugClient,
-    [](IDebugClient* cli)
+using UniqueHandle        = GenericHandle<void, ::CloseHandle>;
+using UniqueIDebugClient8 = GenericHandle<
+    IDebugClient8,
+    [](IDebugClient8* cli)
     {
         cli->EndSession(DEBUG_END_ACTIVE_DETACH);
         cli->Release();
     }>;
-using UniqueIDebugControl = GenericHandle<
-    IDebugControl,
-    [](IDebugControl* ctl)
+using UniqueIDebugControl7 = GenericHandle<
+    IDebugControl7,
+    [](IDebugControl7* ctl)
     {
         ctl->Release();
     }>;
-using UniqueIDebugSymbols3 = GenericHandle<
-    IDebugSymbols3,
-    [](IDebugSymbols3* sym)
+using UniqueIDebugSymbols5 = GenericHandle<
+    IDebugSymbols5,
+    [](IDebugSymbols5* sym)
     {
         sym->Release();
     }>;
@@ -139,6 +139,8 @@ class DbgEng_t
         }
     };
 
+    UniqueHandle DumpFileHandle_ {nullptr};
+
     //
     // This is the internal cache. Granted that resolving symbols is a pretty slow
     // process and the fact that traces usually contain a smaller number of
@@ -152,9 +154,9 @@ class DbgEng_t
     // well as loading the crash-dump.
     //
 
-    UniqueIDebugClient Client_ {nullptr};
-    UniqueIDebugControl Control_ {nullptr};
-    UniqueIDebugSymbols3 Symbols_ {nullptr};
+    UniqueIDebugClient8 Client_ {nullptr};
+    UniqueIDebugControl7 Control_ {nullptr};
+    UniqueIDebugSymbols5 Symbols_ {nullptr};
 
 #ifdef _DEBUG
     StdioOutputCallbacks_t StdioOutputCallbacks_;
@@ -239,12 +241,12 @@ public:
         //
         // Initialize the various COM interfaces that we need.
         //
-        Client_ = UniqueIDebugClient(
-            []() -> IDebugClient*
+        Client_ = UniqueIDebugClient8(
+            []() -> IDebugClient8*
             {
-                IDebugClient* _Cli {nullptr};
+                IDebugClient8* _Cli {nullptr};
                 dbg("Initializing the debugger instance..\n");
-                HRESULT Status = ::DebugCreate(__uuidof(IDebugClient), (void**)&_Cli);
+                HRESULT Status = ::DebugCreate(__uuidof(IDebugClient8), (void**)&_Cli);
                 if ( FAILED(Status) )
                 {
                     err("DebugCreate failed with hr=0x{:08x}\n", (uint32_t)Status);
@@ -258,14 +260,14 @@ public:
             return false;
         }
 
-        Control_ = UniqueIDebugControl(
-            [this]() -> IDebugControl*
+        Control_ = UniqueIDebugControl7(
+            [this]() -> IDebugControl7*
             {
-                IDebugControl* _Ctrl {nullptr};
-                HRESULT Status = Client_->QueryInterface(__uuidof(IDebugControl), (void**)&_Ctrl);
+                IDebugControl7* _Ctrl {nullptr};
+                HRESULT Status = Client_->QueryInterface(__uuidof(IDebugControl7), (void**)&_Ctrl);
                 if ( FAILED(Status) )
                 {
-                    err("QueryInterface/IDebugControl failed with hr=0x{:08x}\n", (uint32_t)Status);
+                    err("QueryInterface/IDebugControl7 failed with hr=0x{:08x}\n", (uint32_t)Status);
                     return nullptr;
                 }
                 return _Ctrl;
@@ -275,11 +277,11 @@ public:
             return false;
         }
 
-        Symbols_ = UniqueIDebugSymbols3(
-            [this]() -> IDebugSymbols3*
+        Symbols_ = UniqueIDebugSymbols5(
+            [this]() -> IDebugSymbols5*
             {
-                IDebugSymbols3* _Sym {nullptr};
-                HRESULT Status = Client_->QueryInterface(__uuidof(IDebugSymbols3), (void**)&_Sym);
+                IDebugSymbols5* _Sym {nullptr};
+                HRESULT Status = Client_->QueryInterface(__uuidof(IDebugSymbols5), (void**)&_Sym);
                 if ( FAILED(Status) )
                 {
                     err("QueryInterface/IDebugSymbols failed with hr=0x{:08x}\n", (uint32_t)Status);
@@ -302,20 +304,21 @@ public:
             }
         }
 
+#ifdef _DEBUG
         //
         // Turn the below on to debug issues related to dbghelp.
         //
-
-#ifdef _DEBUG
-        const uint32_t SYMOPT_DEBUG = 0x80000000;
-        Status                      = Symbols_->SetSymbolOptions(SYMOPT_DEBUG);
-        if ( FAILED(Status) )
         {
-            err("IDebugSymbols::SetSymbolOptions failed with hr=0x{:08x}\n", (uint32_t)Status);
-            return false;
-        }
+            const uint32_t SYMOPT_DEBUG = 0x80000000;
+            HRESULT Status              = Symbols_->SetSymbolOptions(SYMOPT_DEBUG);
+            if ( FAILED(Status) )
+            {
+                err("IDebugSymbols::SetSymbolOptions failed with hr=0x{:08x}\n", (uint32_t)Status);
+                return false;
+            }
 
-        Client_->SetOutputCallbacks(&StdioOutputCallbacks_);
+            Client_->SetOutputCallbacks(&StdioOutputCallbacks_);
+        }
 #endif // _DEBUG
 
         //
@@ -323,12 +326,28 @@ public:
         //
 
         dbg("Opening the dump file..\n");
-        const std::string& DumpFileString = DumpPath.string();
-        const char* DumpFileA             = DumpFileString.c_str();
-        HRESULT Status                    = Client_->OpenDumpFile(DumpFileA);
+        const std::wstring& DumpFileString = DumpPath.wstring();
+        const wchar_t* DumpFileW           = DumpFileString.c_str();
+        DumpFileHandle_                    = UniqueHandle(::CreateFileW(
+            DumpFileW,
+            GENERIC_READ,
+            FILE_SHARE_READ,
+            nullptr,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            nullptr));
+        if ( !DumpFileHandle_ || DumpFileHandle_.get() == INVALID_HANDLE_VALUE )
+        {
+            err("CreateFileW({}) failed with GLE=0x{:x}\n", DumpPath.string(), ::GetLastError());
+            return false;
+        }
+
+        dbg("Parsing the dump file..\n");
+        HRESULT Status =
+            Client_->OpenDumpFileWide2(DumpFileW, (ULONG64)DumpFileHandle_.get(), IMAGE_FILE_MACHINE_AMD64);
         if ( FAILED(Status) )
         {
-            err("OpenDumpFile({}) failed with hr=0x{:08x}\n", DumpFileA, (uint32_t)Status);
+            err("OpenDumpFile({}) failed with hr=0x{:08x}\n", DumpPath.string(), (uint32_t)Status);
             return false;
         }
 
@@ -339,7 +358,7 @@ public:
         // dump file. After the dump file is opened, the next time execution is
         // attempted, the engine will generate this event for the event callbacks.
         // Only then does the dump file become available in the debugging session.
-        // https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/dbgeng/nf-dbgeng-idebugclient-opendumpfile
+        // https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/dbgeng/nf-dbgeng-IDebugClient8-opendumpfile
         //
 
         Status = WaitForEvent();
