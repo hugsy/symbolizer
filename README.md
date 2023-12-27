@@ -48,6 +48,8 @@ nt+0x1ca5e4
 nt+0x1ca5e8
 ```
 
+_Note_: Recently added minidump types (0x09, 0x0a and possibly more) will fail to load as no COM interface was provided by Microsoft (yet?) to interact with them.
+
 ## Usage
 
 In order for symbolizer to work you need to place `dbghelp.dll` as well as `symsrv.dll` in the directory of the symbolizer executable. Symbolizer will copy the two files if they are found in the default Windows SDK's Debuggers install location: `c:\Program Files (x86)\Windows Kits\10\Debuggers\<arch>`.
