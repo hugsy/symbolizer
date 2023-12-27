@@ -48,7 +48,12 @@ nt+0x1ca5e4
 nt+0x1ca5e8
 ```
 
-_Note_: Recently added minidump types (0x09, 0x0a and possibly more) will fail to load as no COM interface was provided by Microsoft (yet?) to interact with them.
+> [!CAUTION]
+> As Symbolizer uses [COM](https://learn.microsoft.com/en-us/windows/win32/com) to interact with dump files, it will only work on Windows hosts.
+
+
+> [!IMPORTANT]
+> Recently added minidump types (0x09, 0x0a and possibly more) will fail to load as no COM interface was provided by Microsoft (yet?) to interact with them.
 
 ## Usage
 
