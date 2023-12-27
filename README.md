@@ -1,7 +1,7 @@
 # Symbolizer - A fast execution trace symbolizer for Windows
 ![Builds](https://github.com/0vercl0k/symbolizer/workflows/Builds/badge.svg)
 
-![Symbolizer](pics/grep.gif)
+![grep](https://github.com/hugsy/symbolizer/assets/590234/76ca8d44-5f76-43e7-9f59-20fdb0b60033)
 
 ## Overview
 
@@ -76,13 +76,15 @@ Options:
 
 The batch mode is designed to symbolize an entire directory filled with execution traces. You can turn on batch mode by simply specifying a directory for the `--input` command line option and an output directory for the `--output` option.
 
-![Batch mode](pics/batch.gif)
+![batch](https://github.com/hugsy/symbolizer/assets/590234/239d46b1-ac65-41d2-8794-c10683da9280)
+
 
 ### Single file mode
 
 As opposed to batch mode, you might be interested in just symbolizing a single trace file which in this case you can specify a file path via the `--input` command line option.
 
-![Single mode](pics/single.gif)
+![single](https://github.com/hugsy/symbolizer/assets/590234/a81da779-1a1a-4acf-9597-aaa28c93ab85)
+
 
 ## Build
 
